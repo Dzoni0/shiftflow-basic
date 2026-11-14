@@ -13,6 +13,8 @@ Node.js 22+ i pnpm. Kopirati .env.example u .env.local i uneti NEXT_PUBLIC_SUPAB
 
 scripts/next.mjs normalizuje Windows putanje. Zadržan je statički export; Supabase je zaseban backend.
 
+Za objavljivanje preko GitHub-a i Cloudflare Pages pogledati [CLOUDFLARE.md](CLOUDFLARE.md).
+
 ## Urađeno za Basic
 
 - Izolovan demo sa 10 zaposlenih, 42 smene i 336 sati; nova firma počinje prazna.
