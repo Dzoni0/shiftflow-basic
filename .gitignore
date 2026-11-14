@@ -6,3 +6,4 @@ out/
 *.tsbuildinfo
 .sites-runtime/
 .sites-checkout*
+supabase/.temp/

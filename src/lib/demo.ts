@@ -14,3 +14,10 @@ export function createDemo(): Workspace {
     requirements: Array.from({ length: 7 }, (_, day) => ["morning", "evening"].flatMap(templateId => ([{ day, templateId, position: "Barista" as const, count: 1 }, { day, templateId, position: "Konobar" as const, count: 2 }]))).flat(), schedules: {} };
   const week = monday(); w.schedules[week] = generateSchedule(w, week); return w;
 }
+
+export function createWorkspace(name = "Moj kafić"): Workspace {
+  return { name, employees: [], positions: ["Barista", "Konobar", "Menadžer"], templates: [
+    { id: "morning", name: "Prva smena", start: "07:00", end: "15:00", color: "mint", days: [0, 1, 2, 3, 4, 5, 6] },
+    { id: "evening", name: "Druga smena", start: "15:00", end: "23:00", color: "blue", days: [0, 1, 2, 3, 4, 5, 6] }
+  ], rules: { minRestHours: 12, maxWeeklyHours: 40, restSeverity: "warning", hoursSeverity: "warning", allowMultiple: true, restEnabled: false, hoursEnabled: false }, requirements: [], schedules: {}, absences: [], dateAvailability: [], replacements: [], requirementOverrides: {} };
+}

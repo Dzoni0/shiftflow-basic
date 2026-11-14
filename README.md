@@ -1,53 +1,48 @@
-# ShiftFlow
+# ShiftFlow Basic
 
-Radna osnova za planiranje smena u kafićima, u Next.js i TypeScript okruženju. Tačan shadcn preset `b7kBsBkh7b` primenjen je zvaničnim CLI-jem: Nova, Zinc, Green, Remix Icon, Instrument Sans i Geist Mono. Fontovi se isporučuju lokalno.
+Next.js, TypeScript, Supabase PostgreSQL/Auth/RLS i postojeći Tailwind/UI sistem. Premium funkcije nisu uključene.
 
 ## Pokretanje
 
-Node.js 22+ i pnpm. Verzije zavisnosti su zaključane u `pnpm-lock.yaml`.
+Node.js 22+ i pnpm. Kopirati .env.example u .env.local i uneti NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Javne vrednosti se ugrađuju tokom statičkog builda; tajni administrativni ključ nije deo klijenta.
 
-```sh
-pnpm install
-pnpm dev
-pnpm check
-pnpm test
-pnpm build
-```
+- pnpm dev — lokalna aplikacija na http://127.0.0.1:3000
+- pnpm exec tsc --noEmit --incremental false — TypeScript
+- pnpm test — generator, istorija, konkurentno čuvanje i PostgreSQL integracija
+- pnpm build — produkcioni statički izlaz u out/
 
-Dev server: `http://127.0.0.1:3000`. Produkcioni statički izlaz je `out/`; Supabase je zaseban backend. `scripts/next.mjs` normalizuje preusmerene Windows putanje pre pokretanja Next.js-a. Koristi se Webpack zbog problema Turbopack-a sa takvim putanjama.
+scripts/next.mjs normalizuje Windows putanje. Zadržan je statički export; Supabase je zaseban backend.
 
-## Dostupno
+## Urađeno za Basic
 
-- Izolovani demo kafić sa 10 zaposlenih, 42 nedeljne smene i 336 planiranih sati.
-- Determinističko generisanje uz dostupnost, pozicije, odmor, noćne smene, ograničenje sati, preferencije i raspodelu vikenda. Pretraga koristi 36 ponovljivih prolaza; nije garantovan matematički optimalan raspored.
-- Zaključavanje smena, ručna izmena, prevlačenje, kopiranje u praznu sledeću nedelju, interne napomene, pretraga i filter pozicije.
-- Nedeljna tabela, dnevni prikaz i lista; zapamćeni izbor prikaza i teme.
-- Evidencija zaposlenih, nedeljna dostupnost, fond sati, vremena smena, potrebni ljudi po danu i podešavanje upozorenja/zabrana.
-- Lokalno automatsko čuvanje sa prijavom greške; Undo/Redo istorija ostaje posle osvežavanja. Najviše 100 koraka u klijentskoj istoriji.
-- Pregled sati i današnjih smena, lokalni status objavljivanja, PNG izvoz i štampa u PDF.
-- Supabase adapter za prijavu/registraciju, atomsku sinhronizaciju, istoriju i privatne linkove, aktivan kada se unese konfiguracija.
-- Tamna i svetla tema, srpska latinica, 24-časovno vreme, Europe/Belgrade.
+- Izolovan demo sa 10 zaposlenih, 42 smene i 336 sati; nova firma počinje prazna.
+- Prilagođene pozicije, više pozicija po zaposlenom, deaktiviranje, cilj sati i opcioni lični maksimum.
+- Dodavanje smena, boja, vremena i dana upotrebe; dodele čuvaju svoja vremena i mogu se pojedinačno menjati.
+- Nedeljna, datumska i delimična dostupnost, odobrena odsustva, nedostupnost i želje za slobodnim danom. Zamena zaposlenog beleži prethodnu i novu osobu.
+- Osnovne potrebe po danu/smeni/poziciji i izuzeci za izabranu nedelju/datume.
+- Deterministički generator sa 36 prolaza, jedinstvenim ID-jevima i očuvanim zaključavanjima. Ne garantuje optimalno rešenje. Prioritet je broj popunjenih mesta, zatim konflikti i raspodela sati/preferencije.
+- Brza izmena dodele i vremena, dupliranje jedne dodele, kopiranje nedelje, drag-and-drop, nedeljni/dnevni/list prikaz.
+- Lokalni format 2 sa migracijom starog stanja; korisnik i firma imaju zaseban keš. Lokalna Undo istorija se ne šalje u cloud i ograničava se pri pisanju.
+- Serijski autosave, trajni red nepotvrđenih upisa, idempotentni operation ID i tačan status potvrde. Nezavisne izmene se spajaju; poslednja prihvaćena izmena istog polja ostaje uz serverski audit. Brisanje naspram konkurentne izmene se ne prepisuje prećutno. Undo/Redo odbija prepisivanje novije promene istog polja.
+- Poslednja objavljena verzija ostaje dostupna dok se priprema novi nacrt. Validne izmene objavljene nedelje osvežavaju njenu projekciju.
+- Privatni tokeni važe 60 dana, mogu se rotirati i opozvati. Otvoren javni prikaz proverava izmene na 30 sekundi i pri fokusu.
+- Poseban PNG/PDF prikaz tima bez internih napomena, odsustava, dostupnosti i ciljnog fonda. PDF koristi dijalog štampe pregledača.
+- Vlasnik upravlja pristupom i nazivom firme; menadžer zaposlenima, pozicijama, pravilima i rasporedom. Korisnik može pripadati više objekata. Pozivni link je vezan za potvrđenu email adresu i važi 7 dana; email se ne šalje automatski.
+- Vođena priprema objekta i eksplicitan početak 21 dana probe. Cena i limit zaposlenih nisu hardkodovani. Plaćeni nastavak zahteva pouzdanu administrativnu potvrdu prema dogovoru o pilotu.
+- Serverska obaveštenja i korisničko stanje pročitano.
 
-Demo koristi `shiftflow:demo:v1` u localStorage. Poslovni prostori imaju odvojene ključeve po company ID-ju; demo podaci se ne unose u novoregistrovanu firmu. Nema lažne prijave ni linkova koji tvrde da rade bez baze.
+## Supabase
 
-## Povezivanje Supabase projekta
+Povezan projekat: https://enwllpwemymmeyycbwie.supabase.co. Migracije su primenjene kroz Supabase MCP. Baza ima 21 tabelu sa RLS-om. Privilegovana implementacija je u private šemi; javni RPC-jevi su SECURITY INVOKER wrapperi sa tačno određenim dozvolama. Direktno pisanje tabela iz klijenta je zabranjeno. save_workspace_v2 atomski ažurira normalizovane podatke, dokument, audit i potvrdu operacije. Svaki upis proverava aktuelno članstvo.
 
-1. Napraviti Supabase projekat i primeniti `supabase/migrations/202611030001_shiftflow.sql` kroz SQL editor ili Supabase CLI.
-2. Kopirati `.env.example` u `.env.local` i uneti URL i javni publishable/anon ključ. Nikada ne unositi service-role ključ u `NEXT_PUBLIC_*` promenljive.
-3. U Supabase Auth podesiti Site URL i dozvoljene redirect adrese za lokalni i objavljeni domen; potvrda emaila se poštuje.
-4. Ponovo pokrenuti dev server ili produkcioni build. Statički export ugrađuje javne promenljive u trenutku builda.
-5. Registracija kreira praznu firmu i vlasnika. Dodati zaposlene, podesiti smene/potrebe, generisati i objaviti raspored.
+Za praznu dodatnu bazu primeniti SQL fajlove iz supabase/migrations redom. Ne primenjivati ih ponovo na već podešen projekat. MCP vodi sopstvene serverom generisane verzije migracija; pre eventualnog prelaska na CLI db push uskladiti istoriju sa listom primenjenih migracija.
 
-Migracija kreira firme, članstva, zaposlene, pozicije, dostupnost, smene, potrebe, nedelje, dodele, odsustva, zamene, istoriju, privatne linkove i obaveštenja. Svi podaci pripadaju firmi; složeni strani ključevi sprečavaju spajanje redova iz različitih firmi. Direktne izmene tabela sa javnim ključem su zabranjene. `save_workspace` proverava članstvo i verziju, čuva dokument, normalizovane podatke i audit u jednoj transakciji. Vlasnik menja pravila i naziv firme; menadžer raspoređuje tim. Objavljene nedelje se dodatno validiraju u PostgreSQL-u.
+U Supabase Auth podesiti Site URL i dozvoljene redirect adrese za produkcioni domen i lokalni razvoj. Email potvrda se poštuje. Vlasnik se registruje u aplikaciji; Supabase platform nalog nije isti nalog kao korisnik ShiftFlow-a.
 
-Verzionisanje trenutno koristi optimistic concurrency: zastarela verzija se odbija umesto da prepiše noviju promenu. Klijent javlja konflikt; posle ponovnog učitavanja uzima se poslednja sačuvana serverska verzija. Prethodni lokalni dokument se arhivira pod `shiftflow:company:<id>:v1:recovery`. Serverski audit je trajan; interfejs za rešavanje konflikata i automatsko osvežavanje između menadžera još nisu implementirani.
+Hosting publika ostaje kao na postojećem Site-u. Za linkove zaposlenih bez prijave i spoljne menadžere potrebno je da sama stranica aplikacije bude dostupna toj publici; RLS i privatni tokeni zasebno štite poslovne podatke.
 
-Privatni link koristi 244 bita slučajnosti, u bazi se čuva SHA-256 hash, važi 60 dana i može se zameniti/opozvati. Javni RPC vraća samo objavljenu nedelju, imena, pozicije i termine; interne napomene, fond sati i dostupnost se ne vraćaju. Site hosting je u početku privatan vlasniku; pristup zaposlenih preko linka zahteva i odgovarajuće podešen pristup hostingu.
+## Provere i preostale pilot odluke
 
-## Provere
+Automatski testovi obuhvataju četiri izolovana objekta, zabrane pristupa, atomske upise i ponavljanje istog zahteva, datumsko odsustvo, noćni rad, duple ID-jeve uz zaključavanje, istorijska vremena/objave, poziv postojećem korisniku, prava menadžera, privatnost linka i sporo/neuspešno čuvanje. Auth se u PostgreSQL testovima simulira; stvarna registracija, email potvrda i svakodnevni rad više korisnika proveravaju se na stvarnim nalozima.
 
-`pnpm test` izvršava sedam testova generatora/istorije i integracioni test migracije u privremenom PostgreSQL-u (PGlite). Integracioni test proverava dve firme, RLS, uloge, atomsko čuvanje, zastarele verzije, nevalidno objavljivanje, privatnost podataka i opoziv linka. Supabase Auth se u tom testu simulira; pravi email tok i mrežna sinhronizacija traže stvarni projekat.
-
-## Preostalo iz trofaznog plana
-
-Ovo je početni funkcionalni MVP. Produkciona Supabase baza nije kreirana niti povezana bez konfiguracije korisnika. Za kompletan pilot ostaju: vođeni onboarding, UI za pozivanje/uklanjanje menadžera, prilagođene pozicije i dodatne smene, datumska odsustva i evidencija zamena u interfejsu, cascading meniji, dupliranje pojedinačne smene i grupne izmene, puni prikaz serverskih obaveštenja, automatska sinhronizacija više menadžera, napredni oporavak konflikata i pilot provera u kafićima. Tabele odsustava/zamena i osnovni pristupni RPC-ji su pripremljeni; još nisu deo glavnog korisničkog toka.
+Za pilot ostaju merenje toka ispod pet minuta u četiri stvarna objekta, doterivanje inline/cascading menija, mobilnog prevlačenja i grupnih korekcija prema posmatranju, pregled zastarelih offline promena istog polja pre njihovog ponovnog slanja, naprednija raspodela vikenda kroz više nedelja i konačna pravila naplate/čuvanja podataka. Automatska naplata nije uvedena. Promene računanja vremena (DST) za planirane sate nisu zasebno obrađene; trajanje se računa po lokalnim časovima.

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createDemo } from "../src/lib/demo";
 import { assignmentConflicts, duration, generateSchedule, hoursFor, missingRequirements, validateSchedule, type Assignment } from "../src/lib/scheduler";
 import { applyChange, redoState, undoState, type StoredState } from "../src/lib/storage";
+import { mergeWorkspace } from "../src/lib/workspace-merge";
 
 test("demo: deterministic generation fills 42 slots with no blocking violations", () => {
   const w = createDemo(); const week = Object.keys(w.schedules)[0];
@@ -12,6 +13,39 @@ test("demo: deterministic generation fills 42 slots with no blocking violations"
   assert.equal(missingRequirements(a.assignments, w.requirements).length, 0);
   assert.equal(validateSchedule(a, w).length, 0);
   for (const e of w.employees) assert.ok(hoursFor(a.assignments, e.id, w.templates) <= 40);
+});
+
+test("all generated locked slot IDs remain unique and preserve times", () => {
+  const w = createDemo(); const week = Object.keys(w.schedules)[0];
+  const locked = w.schedules[week].assignments.find(a => a.position === "Konobar" && a.id.endsWith("-0"))!;
+  locked.locked = true;
+  const original = structuredClone(locked);
+  w.templates.find(t => t.id === locked.templateId)!.end = "14:00";
+  const next = generateSchedule(w, week);
+  assert.equal(new Set(next.assignments.map(a => a.id)).size, next.assignments.length);
+  assert.deepEqual(next.assignments.find(a => a.id === locked.id), original);
+});
+
+test("dated absence, partial availability and wishes share validation with generation", () => {
+  const w = createDemo(); const week = Object.keys(w.schedules)[0];
+  w.absences = [{ id: crypto.randomUUID(), employeeId: "employee-2", from: week, to: week, kind: "absence", reason: "" }];
+  w.dateAvailability = [{ id: crypto.randomUUID(), employeeId: "employee-3", date: week, start: "16:00", end: "22:00" }];
+  const next = generateSchedule(w, week);
+  assert.ok(!next.assignments.some(a => a.day === 0 && ["employee-2", "employee-3"].includes(a.employeeId)));
+  assert.equal(validateSchedule(next, w).filter(c => c.severity === "block").length, 0);
+  w.absences[0].kind = "wish";
+  const a: Assignment = { id: "wish", employeeId: "employee-2", day: 0, templateId: "morning", position: "Barista", locked: false, note: "" };
+  assert.ok(assignmentConflicts(a, [], w, [], week).some(c => c.severity === "warning"));
+});
+
+test("field rebasing preserves independent changes; undo refuses to overwrite a newer field", () => {
+  const base = createDemo(); const local = structuredClone(base); const remote = structuredClone(base);
+  local.employees[0].name = "Lokalna izmena"; remote.employees[1].name = "Drugi menadžer";
+  const merged = mergeWorkspace(base, local, remote);
+  assert.equal(merged.employees[0].name, local.employees[0].name); assert.equal(merged.employees[1].name, remote.employees[1].name);
+  const state = applyChange({ schema: 2, revision: 0, current: base, past: [], future: [] }, local, "Ime");
+  const later = structuredClone(local); later.employees[0].name = "Novija tuđa izmena";
+  assert.throws(() => undoState({ ...state, current: later }), /drugi korisnik/);
 });
 test("locked assignments are preserved on regeneration", () => {
   const w = createDemo(); const week = Object.keys(w.schedules)[0];
